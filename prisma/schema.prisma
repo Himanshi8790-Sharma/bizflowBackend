@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==============================
+// ENUMS
+// ==============================
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+enum AiQueryType {
+  SALES
+  EXPENSE
+  INVENTORY
+  CUSTOMER
+  GENERAL
+}
+
+// ==============================
+// ORGANIZATION
+// ==============================
+
+model Organization {
+  id       String  @id @default(cuid())
+  name     String
+  email    String?
+  phone    String?
+  address  String?
+  isActive Boolean @default(true)
+
+  users       User[]
+  customers   Customer[]
+  products    Product[]
+  orders      Order[]
+  expenses    Expense[]
+  auditLogs   AuditLog[]
+  aiQueryLogs AiQueryLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ==============================
+// USER
+// ==============================
+
+model User {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  email          String
+  passwordHash   String
+  role           Role    @default(EMPLOYEE)
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  auditLogs   AuditLog[]
+  aiQueryLogs AiQueryLog[]
+  orders      Order[]
+  expenses    Expense[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([organizationId, role])
+  @@index([organizationId, isActive])
+}
+
+// ==============================
+// CUSTOMER
+// ==============================
+
+model Customer {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([organizationId])
+  @@index([organizationId, isActive])
+  @@index([organizationId, name])
+}
+
+// ==============================
+// PRODUCT
+// ==============================
+
+model Product {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  sku            String?
+  description    String?
+
+  // All money values are stored in paise
+  price     Int
+  costPrice Int?
+
+  stockQuantity Int @default(0)
+  lowStockLimit Int @default(5)
+
+  isActive Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  orderItems OrderItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, name])
+  @@index([organizationId, isActive])
+}
+
+// ==============================
+// ORDER
+// ==============================
+
+model Order {
+  id             String  @id @default(cuid())
+  organizationId String
+  customerId     String?
+  createdById    String
+
+  orderNumber String
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Money values stored in paise
+  subtotal       Int
+  taxAmount      Int @default(0)
+  discountAmount Int @default(0)
+  totalAmount    Int
+
+  notes String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, orderNumber])
+  @@index([organizationId])
+  @@index([organizationId, customerId])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+// ==============================
+// ORDER ITEM
+// ==============================
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+
+  quantity Int
+
+  // Snapshot of product price at time of order
+  unitPrice Int
+  total     Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ==============================
+// EXPENSE
+// ==============================
+
+model Expense {
+  id             String @id @default(cuid())
+  organizationId String
+  createdById    String
+
+  title       String
+  description String?
+
+  // Money stored in paise
+  amount Int
+
+  category    String?
+  expenseDate DateTime
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([organizationId])
+  @@index([organizationId, expenseDate])
+  @@index([organizationId, category])
+}
+
+// ==============================
+// AUDIT LOG
+// ==============================
+
+model AuditLog {
+  id             String  @id @default(cuid())
+  organizationId String
+  userId         String?
+
+  action   AuditAction
+  entity   String
+  entityId String?
+
+  details Json?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, userId])
+  @@index([organizationId, entity])
+  @@index([organizationId, createdAt])
+}
+
+// ==============================
+// AI QUERY LOG
+// ==============================
+
+model AiQueryLog {
+  id             String  @id @default(cuid())
+  organizationId String
+  userId         String?
+
+  query     String
+  queryType AiQueryType
+
+  response String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, userId])
+  @@index([organizationId, queryType])
+  @@index([organizationId, createdAt])
+}
