@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { pathToFileURL } from "node:url";
 
 import authRoutes from "./routes/auth.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 
 export const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ app.get("/api/health", (_req, res) => {
     message: "BizFlow backend is running",
   });
 });
+app.use("/api/analytics", analyticsRoutes);
 
 const isMainModule =
   typeof process.argv[1] === "string" &&

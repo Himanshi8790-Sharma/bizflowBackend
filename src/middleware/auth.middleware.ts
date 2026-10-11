@@ -12,28 +12,30 @@ import type {
   AuthPayload,
 } from "../lib/auth.js";
 
-export interface AuthRequest
-  extends Request {
-  user?: AuthPayload;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthPayload;
+    }
+  }
 }
 
 export async function requireAuth(
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
-) {
+): Promise<void> {
   try {
     const token = req.cookies?.bizflow_token;
 
     if (!token) {
-      return res.status(401).json({
-        message:
-          "Authentication required",
+      res.status(401).json({
+        message: "Authentication required",
       });
+      return;
     }
 
-    const payload =
-      await verifyToken(token);
+    const payload = await verifyToken(token);
 
     req.user = payload;
 
@@ -44,9 +46,8 @@ export async function requireAuth(
       error
     );
 
-    return res.status(401).json({
-      message:
-        "Invalid or expired session",
+    res.status(401).json({
+      message: "Invalid or expired session",
     });
   }
 }

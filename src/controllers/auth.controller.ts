@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import type { AuthRequest } from "../middleware/auth.middleware.js";
 import bcrypt from "bcrypt";
 
 import { prisma } from "../lib/prisma.js";
@@ -225,6 +224,7 @@ export async function login(
         organization: true,
       },
     });
+    console.log("USER FOUND:", !!user);
 
     if (!user) {
       return res.status(401).json({
@@ -243,6 +243,7 @@ export async function login(
           "Organization is inactive",
       });
     }
+    
 
     // -------------------------
     // Verify password
@@ -253,6 +254,7 @@ export async function login(
         password,
         user.passwordHash
       );
+      console.log("PASSWORD MATCH:", passwordMatch);
 
     if (!passwordMatch) {
       return res.status(401).json({
@@ -347,7 +349,7 @@ export async function logout(
 
 
 export async function getMe(
-  req: AuthRequest,
+  req: Request,
   res: Response
 ) {
   try {
