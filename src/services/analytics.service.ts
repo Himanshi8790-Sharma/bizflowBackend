@@ -5,44 +5,69 @@ export const analyticsService = {
    * Get dashboard summary for an organization.
    */
   async getSummary(organizationId: string) {
-    const [totalOrders, pendingOrders, totalCustomers, revenueResult] =
-      await Promise.all([
-        prisma.order.count({
-          where: {
-            organizationId,
-          },
-        }),
+    const [
+      totalOrders,
+      pendingOrders,
+      totalCustomers,
+      revenueResult,
+      expensesResult,
+    ] = await Promise.all([
+      // Total orders
+      prisma.order.count({
+        where: {
+          organizationId,
+        },
+      }),
 
-        prisma.order.count({
-          where: {
-            organizationId,
-            status: "PENDING",
-          },
-        }),
+      // Pending orders
+      prisma.order.count({
+        where: {
+          organizationId,
+          status: "PENDING",
+        },
+      }),
 
-        prisma.customer.count({
-          where: {
-            organizationId,
-            isActive: true,
-            deletedAt: null,
-          },
-        }),
+      // Active customers
+      prisma.customer.count({
+        where: {
+          organizationId,
+          isActive: true,
+          deletedAt: null,
+        },
+      }),
 
-        prisma.order.aggregate({
-          where: {
-            organizationId,
-            status: {
-              not: "CANCELLED",
-            },
+      // Revenue: subtotal of non-cancelled orders
+      prisma.order.aggregate({
+        where: {
+          organizationId,
+          status: {
+            not: "CANCELLED",
           },
-          _sum: {
-            totalAmount: true,
-          },
-        }),
-      ]);
+        },
+        _sum: {
+          subtotal: true,
+        },
+      }),
+
+      // Total expenses excluding soft-deleted records
+      prisma.expense.aggregate({
+        where: {
+          organizationId,
+          deletedAt: null,
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
+
+    const totalRevenue = revenueResult._sum.subtotal ?? 0;
+    const totalExpenses = expensesResult._sum.amount ?? 0;
 
     return {
-      totalRevenue: revenueResult._sum.totalAmount ?? 0,
+      totalRevenue,
+      totalExpenses,
+      estimatedProfit: totalRevenue - totalExpenses,
       totalOrders,
       totalCustomers,
       pendingOrders,
@@ -50,9 +75,7 @@ export const analyticsService = {
   },
 
   /**
-   * Get daily revenue trend for an organization.
-   *
-   * Returns revenue for the last 30 days.
+   * Get daily revenue trend for the last 30 days.
    */
   async getRevenueTrend(organizationId: string) {
     const startDate = new Date();
@@ -71,7 +94,7 @@ export const analyticsService = {
         },
       },
       select: {
-        totalAmount: true,
+        subtotal: true,
         createdAt: true,
       },
       orderBy: {
@@ -83,9 +106,10 @@ export const analyticsService = {
 
     for (const order of orders) {
       const date = order.createdAt.toISOString().slice(0, 10);
+
       revenueByDate.set(
         date,
-        (revenueByDate.get(date) ?? 0) + order.totalAmount,
+        (revenueByDate.get(date) ?? 0) + order.subtotal,
       );
     }
 
@@ -96,6 +120,7 @@ export const analyticsService = {
       date.setDate(startDate.getDate() + i);
 
       const dateString = date.toISOString().slice(0, 10);
+
       revenueTrend.push({
         date: dateString,
         revenue: revenueByDate.get(dateString) ?? 0,
@@ -186,7 +211,8 @@ export const analyticsService = {
   },
 
   /**
-   * Get total expenses grouped by category.
+   * Get expenses grouped by category.
+   * Includes uncategorized expenses.
    */
   async getExpensesByCategory(organizationId: string) {
     const expenses = await prisma.expense.groupBy({
@@ -194,9 +220,6 @@ export const analyticsService = {
       where: {
         organizationId,
         deletedAt: null,
-        category: {
-          not: null,
-        },
       },
       _sum: {
         amount: true,
@@ -204,7 +227,7 @@ export const analyticsService = {
     });
 
     return expenses.map((expense) => ({
-      category: expense.category,
+      category: expense.category ?? "Uncategorized",
       amount: expense._sum.amount ?? 0,
     }));
   },

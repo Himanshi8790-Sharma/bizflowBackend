@@ -1,21 +1,22 @@
-import { analyticsService } from "../services/analytics.service.js";
 import type { Request, Response } from "express";
+import { analyticsService } from "../services/analytics.service.js";
 
 export const getSummary = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
-  res.status(401).json({
-    success: false,
-    message: "Authentication required",
-  });
-  return;
-}
-    const organizationId = req.user.organizationId;
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
-    const summary = await analyticsService.getSummary(organizationId);
+    const summary = await analyticsService.getSummary(
+      req.user.organizationId,
+    );
 
     res.status(200).json({
       success: true,
@@ -33,20 +34,20 @@ export const getSummary = async (
 
 export const getRevenueTrend = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
-  res.status(401).json({
-    success: false,
-    message: "Authentication required",
-  });
-  return;
-}
-    const organizationId = req.user.organizationId;
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
-    const revenueTrend =
-      await analyticsService.getRevenueTrend(organizationId);
+    const revenueTrend = await analyticsService.getRevenueTrend(
+      req.user.organizationId,
+    );
 
     res.status(200).json({
       success: true,
@@ -64,20 +65,20 @@ export const getRevenueTrend = async (
 
 export const getTopProducts = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
-  res.status(401).json({
-    success: false,
-    message: "Authentication required",
-  });
-  return;
-}
-    const organizationId = req.user.organizationId;
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
-    const topProducts =
-      await analyticsService.getTopProducts(organizationId);
+    const topProducts = await analyticsService.getTopProducts(
+      req.user.organizationId,
+    );
 
     res.status(200).json({
       success: true,
@@ -95,20 +96,21 @@ export const getTopProducts = async (
 
 export const getOrderStatusDistribution = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
-  res.status(401).json({
-    success: false,
-    message: "Authentication required",
-  });
-  return;
-}
-    const organizationId = req.user.organizationId;
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
     const orderStatusDistribution =
-      await analyticsService.getOrderStatusDistribution(organizationId);
+      await analyticsService.getOrderStatusDistribution(
+        req.user.organizationId,
+      );
 
     res.status(200).json({
       success: true,
@@ -126,20 +128,21 @@ export const getOrderStatusDistribution = async (
 
 export const getExpensesByCategory = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
-  res.status(401).json({
-    success: false,
-    message: "Authentication required",
-  });
-  return;
-}
-    const organizationId = req.user.organizationId;
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
     const expensesByCategory =
-      await analyticsService.getExpensesByCategory(organizationId);
+      await analyticsService.getExpensesByCategory(
+        req.user.organizationId,
+      );
 
     res.status(200).json({
       success: true,

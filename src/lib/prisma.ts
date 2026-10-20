@@ -1,20 +1,4 @@
 import "dotenv/config";
-
-// import { PrismaClient } from "@prisma/client";
-
-// const globalForPrisma = globalThis as unknown as {
-//   prisma: PrismaClient | undefined;
-// };
-
-// export const prisma =
-//   globalForPrisma.prisma ??
-//   new PrismaClient();
-
-// if (process.env.NODE_ENV !== "production") {
-//   globalForPrisma.prisma = prisma;
-// }
-
-
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -26,6 +10,9 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({
   connectionString,
+  max: 10,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
 });
 
 const globalForPrisma = globalThis as unknown as {
@@ -33,10 +20,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-  });
+  globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

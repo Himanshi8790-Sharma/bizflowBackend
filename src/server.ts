@@ -11,6 +11,7 @@ import customerRoutes from "./routes/customer.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
 
 export const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 const isMainModule =
   typeof process.argv[1] === "string" &&

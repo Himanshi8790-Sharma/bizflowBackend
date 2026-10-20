@@ -47,6 +47,15 @@ enum AiQueryType {
   GENERAL
 }
 
+enum InventoryMovementType {
+  INCREASE
+  DECREASE
+  SALE
+  RESTOCK
+  RETURN
+  ADJUSTMENT
+}
+
 // ==============================
 // ORGANIZATION
 // ==============================
@@ -59,13 +68,14 @@ model Organization {
   address  String?
   isActive Boolean @default(true)
 
-  users       User[]
-  customers   Customer[]
-  products    Product[]
-  orders      Order[]
-  expenses    Expense[]
-  auditLogs   AuditLog[]
-  aiQueryLogs AiQueryLog[]
+  users              User[]
+  customers          Customer[]
+  products           Product[]
+  orders             Order[]
+  expenses           Expense[]
+  auditLogs          AuditLog[]
+  aiQueryLogs        AiQueryLog[]
+  inventoryMovements InventoryMovement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,10 +98,11 @@ model User {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  auditLogs   AuditLog[]
-  aiQueryLogs AiQueryLog[]
-  orders      Order[]
-  expenses    Expense[]
+  auditLogs          AuditLog[]
+  aiQueryLogs        AiQueryLog[]
+  orders             Order[]
+  expenses           Expense[]
+  inventoryMovements InventoryMovement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -150,7 +161,8 @@ model Product {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  orderItems OrderItem[]
+  orderItems         OrderItem[]
+  inventoryMovements InventoryMovement[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -163,11 +175,46 @@ model Product {
 }
 
 // ==============================
+// INVENTORY MOVEMENT
+// ==============================
+
+model InventoryMovement {
+  id             String @id @default(cuid())
+  organizationId String
+  productId      String
+  createdById    String
+
+  // Type of stock movement
+  type InventoryMovementType
+
+  // Positive quantity of stock moved
+  quantity Int
+
+  // Stock before and after movement
+  previousStock Int
+  newStock      Int
+
+  reason    String?
+  reference String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, productId])
+  @@index([organizationId, createdAt])
+  @@index([productId, createdAt])
+}
+
+// ==============================
 // ORDER
 // ==============================
 
 model Order {
-  id             String  @id @default(cuid())
+  id             String @id @default(cuid())
   organizationId String
   customerId     String?
   createdById    String
@@ -287,7 +334,7 @@ model AuditLog {
 // ==============================
 
 model AiQueryLog {
-  id             String  @id @default(cuid())
+  id             String @id @default(cuid())
   organizationId String
   userId         String?
 
