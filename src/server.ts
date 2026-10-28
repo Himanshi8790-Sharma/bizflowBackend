@@ -13,6 +13,7 @@ import orderRoutes from "./routes/order.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import teamRoutes from "./routes/team.routes.js";
 
 export const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,7 +43,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/ai", aiRoutes);
-
+app.use("/api/team", teamRoutes);
 const isMainModule =
   typeof process.argv[1] === "string" &&
   import.meta.url === pathToFileURL(process.argv[1]).href;
