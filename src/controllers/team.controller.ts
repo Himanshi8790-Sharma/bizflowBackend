@@ -1,12 +1,17 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
+
 import teamService from "../services/team.service.js";
-import { acceptInvitationSchema, createInvitationSchema, updateTeamRoleSchema } from "../validators/team.validator.js";
+
+import {
+  createTeamMemberSchema,
+  updateTeamRoleSchema,
+} from "../validators/team.validator.js";
 
 
 export const teamController = {
-  // POST /api/team/invitations
-  async createInvitation(req: Request, res: Response): Promise<void> {
+  // POST /api/team/members 
+  async createMember(req: Request, res: Response): Promise<void> {
     try {
       const user = req.user;
 
@@ -18,9 +23,9 @@ export const teamController = {
         return;
       }
 
-      const input = createInvitationSchema.parse(req.body);
+      const input = createTeamMemberSchema.parse(req.body);
 
-      const invitation = await teamService.createInvitation(
+      const member = await teamService.createMember(
         user.organizationId,
         user.userId,
         input,
@@ -28,10 +33,12 @@ export const teamController = {
 
       res.status(201).json({
         success: true,
-        message: "Invitation sent successfully",
-        data: invitation,
+        message: "Team member created successfully",
+        data: member,
       });
-    } catch (error) {
+       } catch (error) {
+      console.error("CREATE TEAM MEMBER ERROR:", error);
+
       if (error instanceof ZodError) {
         res.status(400).json({
           success: false,
@@ -55,41 +62,41 @@ export const teamController = {
   },
 
   // POST /api/team/invitations/accept
-  async acceptInvitation(req: Request, res: Response): Promise<void> {
-    try {
-      const input = acceptInvitationSchema.parse(req.body);
-      const user = await teamService.acceptInvitation(input);
+  // async acceptInvitation(req: Request, res: Response): Promise<void> {
+  //   try {
+  //     const input = acceptInvitationSchema.parse(req.body);
+  //     const user = await teamService.acceptInvitation(input);
 
-      res.status(201).json({
-        success: true,
-        message: "Invitation accepted successfully",
-        data: user,
-      });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid invitation data",
-          errors: error.issues,
-        });
-        return;
-      }
+  //     res.status(201).json({
+  //       success: true,
+  //       message: "Invitation accepted successfully",
+  //       data: user,
+  //     });
+  //   } catch (error) {
+  //     if (error instanceof ZodError) {
+  //       res.status(400).json({
+  //         success: false,
+  //         message: "Invalid invitation data",
+  //         errors: error.issues,
+  //       });
+  //       return;
+  //     }
 
-      const message =
-        error instanceof Error ? error.message : "Failed to accept invitation";
+  //     const message =
+  //       error instanceof Error ? error.message : "Failed to accept invitation";
 
-      const status =
-        message.includes("already exists") ? 409 :
-        message.includes("Invalid invitation") ||
-        message.includes("expired") ||
-        message.includes("revoked") ||
-        message.includes("already accepted") ||
-        message.includes("no longer valid") ? 400 :
-        message.includes("Organization not found") ? 404 : 500;
+  //     const status =
+  //       message.includes("already exists") ? 409 :
+  //       message.includes("Invalid invitation") ||
+  //       message.includes("expired") ||
+  //       message.includes("revoked") ||
+  //       message.includes("already accepted") ||
+  //       message.includes("no longer valid") ? 400 :
+  //       message.includes("Organization not found") ? 404 : 500;
 
-      res.status(status).json({ success: false, message });
-    }
-  },
+  //     res.status(status).json({ success: false, message });
+  //   }
+  // },
 
   // GET /api/team
   async listMembers(req: Request, res: Response): Promise<void> {

@@ -1,22 +1,23 @@
+
 import { Router } from "express";
+
 import { teamController } from "../controllers/team.controller.js";
+
 import { requireAuth } from "../middleware/auth.middleware.js";
+
 import { authorizeRoles } from "../middleware/rbac.middleware.js";
 
 const router = Router();
 
+// CREATE TEAM MEMBER
 router.post(
-  "/invitations/accept",
-  teamController.acceptInvitation,
-);
-
-router.post(
-  "/invitations",
+  "/members",
   requireAuth,
   authorizeRoles("ADMIN"),
-  teamController.createInvitation,
+  teamController.createMember,
 );
 
+// GET TEAM MEMBERS
 router.get(
   "/",
   requireAuth,
@@ -24,6 +25,7 @@ router.get(
   teamController.listMembers,
 );
 
+// UPDATE ROLE
 router.patch(
   "/:memberId/role",
   requireAuth,
@@ -31,6 +33,7 @@ router.patch(
   teamController.updateMemberRole,
 );
 
+// REMOVE MEMBER
 router.delete(
   "/:memberId",
   requireAuth,

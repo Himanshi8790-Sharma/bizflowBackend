@@ -10,6 +10,7 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({
   connectionString,
+  
   max: 10,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
